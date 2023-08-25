@@ -15,8 +15,17 @@ interface CompanyData {
     currency: string;
 }
 
+interface CsvEarningsData {
+    symbol: string;
+    name: string;
+    reportDate: string;
+    fiscalDateEnding: string;
+    estimate: string;
+    currency: string;
+}
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const { cur: curParams, targetCur: targetCurrency = 'USD' } = event.queryStringParameters || {};
+    const { cur: curParams, targetCur: targetCurrency } = event.queryStringParameters || {};
 
     if (curParams && !Array.isArray(curParams)) {
         return {
@@ -35,7 +44,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     try {       
         const earningsData = await fetchEarningsData();
 
-        const filteredCompanies = filterCompaniesByCurrencies(earningsData, curParams);
+        const nearestMonthCompanies = findNearestMonthCompanies(earningsData);
+
+        const filteredCompanies = filterCompaniesByCurrencies(nearestMonthCompanies, curParams);
 
         const averageEarnings = await calculateAverageEarnings(filteredCompanies, targetCurrency);
 
@@ -51,10 +62,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
-async function fetchEarningsData() {
+async function fetchEarningsData(): Promise<CsvEarningsData[]> {
     const response = await axios.get(`${alphaVantageUrl}query?function=EARNINGS_CALENDAR&horizon=3month&apikey=${apiKey}`);
     const csvData = response.data;
-    const parsedData = parse(csvData, { header: true }).data as CompanyData[];
+    const parsedData = parse(csvData, { header: true }).data as CsvEarningsData[];
     return parsedData;
 }
 
@@ -95,3 +106,22 @@ async function calculateAverageEarnings(companies: CompanyData[], targetCurrency
     return averageEarnings;
 }
 
+function findNearestMonthCompanies(companies: CompanyData[]): CompanyData[] {
+    const currentDate = new Date();
+    let nearestMonthDiff = Infinity;
+    let nearestMonthCompanies: CompanyData[] = [];
+
+    for (const company of companies) {
+        const reportDate = new Date(company.reportDate);
+        const monthDiff = Math.abs(currentDate.getMonth() - reportDate.getMonth());
+
+        if (monthDiff < nearestMonthDiff) {
+            nearestMonthDiff = monthDiff;
+            nearestMonthCompanies = [company];
+        } else if (monthDiff === nearestMonthDiff) {
+            nearestMonthCompanies.push(company);
+        }
+    }
+
+    return nearestMonthCompanies;
+}
