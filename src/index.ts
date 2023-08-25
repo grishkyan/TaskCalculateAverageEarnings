@@ -24,6 +24,11 @@ interface CsvEarningsData {
     currency: string;
 }
 
+interface ApiResponse {
+    average: number;
+    currency: string;
+}
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const { cur: curParams, targetCur: targetCurrency } = event.queryStringParameters || {};
 
@@ -50,10 +55,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const averageEarnings = await calculateAverageEarnings(filteredCompanies, targetCurrency);
 
+        const response: ApiResponse = {
+            average: averageEarnings,
+            currency: targetCurrency,
+        };
+
         return {
             statusCode: 200,
-            body: JSON.stringify({ averageEarnings }),
+            body: JSON.stringify(response),
         };
+        
     } catch (error) {
         return {
             statusCode: 500,

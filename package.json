@@ -2,11 +2,13 @@
   "name": "my-lambda-project",
   "version": "1.0.0",
   "description": "",
-  "main": "lambda.js",
+  "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "package": "npm run build && zip -r lambda-deployment-package.zip dist",
-    "test": "npx mocha --require ts-node/register src/lambda.test.ts"
+    "prepare-zip": "npm run build && mkdir -p tmp && cp -R node_modules tmp/ && cp index.js tmp/",
+    "create-zip": "npm run prepare-zip && zip -r lambda-deployment-package.zip tmp",
+    "package": "npm run create-zip",
+    "test": "npx mocha --require ts-node/register src/index.test.ts"
   },
   "author": "",
   "license": "ISC",

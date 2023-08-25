@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as awsSdkMock from 'aws-sdk-mock';
-import { handler } from './lambda';
+import { handler } from '.';
 
 describe('Lambda Handler', () => {
     afterEach(() => {
@@ -10,7 +10,7 @@ describe('Lambda Handler', () => {
     it('should calculate average earnings for valid input', async () => {
         const event: any = {
             queryStringParameters: {
-                cur: 'USD,EUR', 
+                cur: ['USD', 'EUR'],  
                 targetCur: 'USD',
             },
         };
